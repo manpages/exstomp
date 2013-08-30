@@ -6,7 +6,7 @@ defmodule ExStomp do
                      user: "admin", 
                      pass: "password"
 
-  defrecordp :state, sock: nil
+  defrecordp :state, sock: nil, parser: nil
 
   @emptybody ["\n\n", <<0>>]
   @eop       [<<0>>]
@@ -25,7 +25,7 @@ defmodule ExStomp do
   @spec init([{:creds, binary, non_neg_integer, binary, binary}]) :: {:ok, {:state, any}}
   def init([opts]) do
     IO.puts "#{__MODULE__}: init(#{inspect opts})"
-    sock = Socket.TCP.connect!(creds(opts, :host), creds(opts, :port), packet: :line, mode: :active)
+    sock = Socket.TCP.connect!(creds(opts, :host), creds(opts, :port), packet: :line, mode: :passive)
 
     pack = [ "CONNECT", "\nlogin: ",     creds(opts, :user),
                         "\npasscode: ",  creds(opts, :pass),
@@ -34,8 +34,10 @@ defmodule ExStomp do
     ts(pack)
 
     sock.send! pack
+    [connected: headers] = recv_connected(sock)
+    IO.puts "#{inspect headers}"
 
-    {:ok, state(sock: sock)}
+    {:ok, state(sock: sock.active(:once), parser: :waiting)}
   end
 
   def handle_info({:tcp_closed, _}, state) do
@@ -62,4 +64,19 @@ defmodule ExStomp do
   end
 
   defp ts(x), do: IO.puts "#{:io_lib.format('~ts', [x])}"
+
+  defp recv_connected(sock) do
+    "CONNECTED\n" = sock.recv!
+    [connected: recv_connected_get_headers(sock, [])]
+  end
+
+  defp recv_connected_get_headers(sock, headers) do
+    case sock.recv! do
+      <<0, 10>> -> Enum.reverse(headers)
+      "\n"      -> recv_connected_get_headers(sock, headers)
+      header    -> 
+        [key, value] = String.split(header, ":", global: false)
+        recv_connected_get_headers(sock, [[key, String.strip(value)]|headers])
+    end
+  end
 end
