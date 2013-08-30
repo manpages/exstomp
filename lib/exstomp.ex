@@ -74,9 +74,12 @@ defmodule ExStomp do
     case sock.recv! do
       <<0, 10>> -> Enum.reverse(headers)
       "\n"      -> recv_connected_get_headers(sock, headers)
-      header    -> 
-        [key, value] = String.split(header, ":", global: false)
-        recv_connected_get_headers(sock, [[key, String.strip(value)]|headers])
+      header    -> get_header(header)
     end
+  end
+
+  defp get_header(header) do
+    [key, value] = String.split(header, ":", global: false)
+    recv_connected_get_headers(sock, [[key, String.strip(value)]|headers])
   end
 end
