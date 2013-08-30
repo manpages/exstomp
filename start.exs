@@ -1,0 +1,1 @@
+Application.Behaviour.start(:exstomp)

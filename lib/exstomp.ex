@@ -3,10 +3,12 @@ defmodule ExStomp do
 
   defrecordp :creds, host: "127.0.0.1", 
                      port: 61613, 
-                     user: "admin", 
-                     pass: "password"
+                     user: 'admin', 
+                     pass: 'password'
 
   defrecordp :state, sock: nil
+
+  @eop ["\n\n", <<0>>]
 
   @spec start(Keyword.t) :: pid
   def start(kwopts) do
@@ -19,15 +21,16 @@ defmodule ExStomp do
 
   def init([opts]) do
     IO.puts "#{__MODULE__}: init(#{inspect opts})"
-    sock = Socket.TCP.connect!(creds(opts, :host), creds(opts, :port), packet: :line)
-    sock.send(""") 
-    CONNECT
-    login: #{creds(opts, :user)}
-    passcode: #{creds(opts, :pass)}
-    client-id: exstomp-#{:crypto.rand_bytes(8)}
+    sock = Socket.TCP.connect!(creds(opts, :host), creds(opts, :port), packet: :line, mode: :passive)
 
-    \0
-    """
+    pack = [ "CONNECT", "\nlogin: ",     creds(opts, :user),
+                        "\npasscode: ",  creds(opts, :pass),
+                        "\nclient-id: ", "fuckoff",
+             @eop ]
+                        
+    sock.send! pack
+    "CONNECTED\n" = sock.recv!
+
     {:ok, state(sock: sock)}
   end
 end
