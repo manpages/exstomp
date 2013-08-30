@@ -25,9 +25,11 @@ defmodule ExStomp do
 
     pack = [ "CONNECT", "\nlogin: ",     creds(opts, :user),
                         "\npasscode: ",  creds(opts, :pass),
-                        "\nclient-id: ", "fuckoff",
+                        "\nclient-id: ", "exstomp-#{:base64.encode(:crypto.rand_bytes(32))}",
              @eop ]
                         
+    IO.puts "#{inspect pack}"
+
     sock.send! pack
     "CONNECTED\n" = sock.recv!
 
