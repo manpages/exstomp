@@ -19,6 +19,15 @@ defmodule ExStomp do
 
   def init([opts]) do
     IO.puts "#{__MODULE__}: init(#{inspect opts})"
-    {:ok, state()}
+    sock = Socket.TCP.connect!(creds(opts, :host), creds(opts, :port), packet: :line)
+    sock.send(""") 
+    CONNECT
+    login: #{creds(opts, :user)}
+    passcode: #{creds(opts, :pass)}
+    client-id: exstomp-#{:crypto.rand_bytes(8)}
+
+    \0
+    """
+    {:ok, state(sock: sock)}
   end
 end
