@@ -1,0 +1,3 @@
+[ "finalizer": {:git, "git://github.com/meh/elixir-finalizer.git", "9c38d9145824a46c66f1a010e137a953a6c78e04", []},
+  "resource": {:git, "git://github.com/tonyrog/resource.git", "37264ec960263cec0df8d6db0da818297b8d5771", []},
+  "socket": {:git, "git://github.com/meh/elixir-socket.git", "db2590c8476ed220a8e02d41137d472a60cd009c", []} ]

@@ -1,4 +1,4 @@
-defmodule Exstomp1Test do
+defmodule ExStompTest do
   use ExUnit.Case
 
   test "the truth" do

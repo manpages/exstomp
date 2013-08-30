@@ -1,0 +1,2 @@
+defmodule ExStomp do
+end
