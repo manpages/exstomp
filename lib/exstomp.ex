@@ -3,8 +3,8 @@ defmodule ExStomp do
 
   defrecordp :creds, host: "127.0.0.1", 
                      port: 61613, 
-                     user: 'admin', 
-                     pass: 'password'
+                     user: "admin", 
+                     pass: "password"
 
   defrecordp :state, sock: nil
 
