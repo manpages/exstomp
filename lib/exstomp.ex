@@ -30,7 +30,7 @@ defmodule ExStomp do
   end
 
   def subscribe(pid) do
-    :gen_server.cast(__MODULE__, {:subscribe, self})
+    :gen_server.cast(__MODULE__, {:subscribe, pid})
   end
 
   def run(command, header_proplist, body) do
