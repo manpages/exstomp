@@ -1,15 +1,17 @@
 defmodule ExStomp do
   use GenServer.Behaviour
 
-  defrecordp :otps, host: "127.0.0.1", 
+  defrecordp :opts, host: "127.0.0.1", 
                     port: 61613, 
                     user: "admin", 
                     pass: "password",
-                    from: nil
+                    from: nil,
+                    exec: nil
 
   defrecordp :state, sock: nil, 
                      next: :command, 
                      frame: nil,
+                     exec: nil,
                      broadcast: [] 
 
   defrecordp :frame, command: nil,
@@ -21,11 +23,12 @@ defmodule ExStomp do
 
   @spec start(Keyword.t) :: pid
   def start(kwopts) do
-    opts = otps( host: kwopts[:host] || otps(otps(), :host),
-                 port: kwopts[:port] || otps(otps(), :port),
-                 user: kwopts[:user] || otps(otps(), :user),
-                 pass: kwopts[:pass] || otps(otps(), :pass),
-                 from: kwopts[:from] || otps(otps(), :from) )
+    opts = opts( host: kwopts[:host] || opts(opts(), :host),
+                 port: kwopts[:port] || opts(opts(), :port),
+                 user: kwopts[:user] || opts(opts(), :user),
+                 pass: kwopts[:pass] || opts(opts(), :pass),
+                 exec: kwopts[:exec] || opts(opts(), :exec),
+                 from: kwopts[:from] || opts(opts(), :from) )
     :gen_server.start_link({:local, __MODULE__}, __MODULE__, [opts], [])
   end
 
@@ -40,19 +43,21 @@ defmodule ExStomp do
     :gen_server.cast(__MODULE__, {:run, frame}) 
   end
 
-  @spec init([{:otps, binary, non_neg_integer, binary, binary, pid | nil}]) :: 
+  @spec init([{:opts, binary, non_neg_integer, binary, binary, pid | nil}]) :: 
         {:ok, {:state, port | nil, atom, list, [pid]}}
   def init([opts]) do
-    sock = Socket.TCP.connect!(otps(opts, :host), otps(opts, :port), packet: :line, mode: :active)
+    broadcast = (opts(opts, :from)) && [(opts(opts, :from))] || []
+    exec = opts(opts, :exec)
+    sock = Socket.TCP.connect!(opts(opts, :host), opts(opts, :port), packet: :line, mode: :active)
 
-    pack = [ "CONNECT", "\nlogin: ",     otps(opts, :user),
-                        "\npasscode: ",  otps(opts, :pass),
+    pack = [ "CONNECT", "\nlogin: ",     opts(opts, :user),
+                        "\npasscode: ",  opts(opts, :pass),
                         "\nclient-id: ", "exstomp-#{:base64.encode(:crypto.rand_bytes(32))}",
              @emptybody ]
 
     sock.send! pack
 
-    {:ok, state(sock: sock, frame: frame())}
+    {:ok, state(sock: sock, frame: frame(), broadcast: broadcast, exec: exec)}
   end
 
   ## handles
@@ -158,6 +163,7 @@ defmodule ExStomp do
   end
 
   defp broadcast(state) do
-    IO.puts("BROADCAST: #{inspect state(state, :frame)}")
+    Enum.each(state(state, :broadcast), fn(x) -> x <- {__MODULE__, state(state, :frame)} end)
+    if state(state, :exec), do: state(state, :exec).(state(state, :frame))
   end
 end
