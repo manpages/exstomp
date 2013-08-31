@@ -36,8 +36,14 @@ defmodule ExStomp do
     :gen_server.cast(__MODULE__, {:subscribe, pid})
   end
 
+  def set_exec(fun) do
+    :gen_server.cast(__MODULE__, {:set_exec, fun})
+  end
+
   def run(command, header_proplist, body) do
-    run [command, "\n", (lc {k,v} inlist header_proplist, do: [k, ":", v, "\n"]), "\n", body, "\n"]
+    run([ command, "\n", 
+          (lc {k,v} inlist header_proplist, do: [k, ":", v, "\n"]), "\n", 
+          body, "\n" ])
   end
   def run(frame) do
     :gen_server.cast(__MODULE__, {:run, frame}) 
@@ -74,6 +80,10 @@ defmodule ExStomp do
   def handle_cast({:run, frame}, state) do
     state(state, :sock).send! [frame, @eop]
     {:noreply, state}
+  end
+
+  def handle_cast({:set_exec, fun}, state) do
+    {:noreply, state(state, exec: fun)}
   end
 
   def handle_info({:tcp_closed, _}, state) do
